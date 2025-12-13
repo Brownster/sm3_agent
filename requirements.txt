@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+langchain
+langchain-openai
+modelcontextprotocol
+chainlit
+httpx
+python-dotenv

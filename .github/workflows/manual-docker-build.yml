@@ -3,34 +3,9 @@ name: Manual Docker Build
 on:
   workflow_dispatch:
     inputs:
-      image_name:
-        description: "Fully-qualified image name (e.g. ghcr.io/org/app)"
-        required: true
-        type: string
-      tag:
+      version:
         description: "Tag to apply to the image"
-        required: false
-        default: "latest"
-        type: string
-      push:
-        description: "Push the image to the registry"
-        required: false
-        default: false
-        type: boolean
-      registry:
-        description: "Registry host (default: ghcr.io)"
-        required: false
-        default: "ghcr.io"
-        type: string
-      build_context:
-        description: "Build context path"
-        required: false
-        default: "."
-        type: string
-      dockerfile:
-        description: "Path to the Dockerfile"
-        required: false
-        default: "./Dockerfile"
+        required: true
         type: string
 
 jobs:
@@ -40,11 +15,11 @@ jobs:
       contents: read
       packages: write
     env:
-      IMAGE: ${{ inputs.image_name }}
-      TAG: ${{ inputs.tag }}
-      REGISTRY: ${{ inputs.registry }}
-      DOCKERFILE: ${{ inputs.dockerfile }}
-      CONTEXT: ${{ inputs.build_context }}
+      REGISTRY: ghcr.io
+      IMAGE: ${{ github.repository }}
+      TAG: ${{ inputs.version }}
+      DOCKERFILE: ./Dockerfile
+      CONTEXT: .
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,22 +28,16 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to registry
-        if: inputs.push == true
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and optionally push image
+      - name: Build and push image
         uses: docker/build-push-action@v6
         with:
           context: ${{ env.CONTEXT }}
           file: ${{ env.DOCKERFILE }}
-          push: ${{ inputs.push }}
-          tags: ${{ format('{0}:{1}', env.IMAGE, env.TAG) }}
-          load: ${{ inputs.push == false }}
-
-      - name: Show built image
-        if: inputs.push == false
-        run: docker images | grep "${IMAGE}"
+          push: true
+          tags: ${{ format('{0}/{1}:{2}', env.REGISTRY, env.IMAGE, env.TAG) }}

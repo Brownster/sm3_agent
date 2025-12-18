@@ -30,3 +30,40 @@ A modular chat assistant that connects a Grafana MCP server with LangChain tooli
    ```
 
 The API exposes `POST /api/chat` for chat turns and `GET /health` for readiness checks.
+
+## Docker
+- Build locally from the root Dockerfile:
+  ```bash
+  docker build -t sm3-agent:local .
+  docker run --rm -p 8000:8000 \
+    -e OPENAI_API_KEY=<your-key> \
+    -e MCP_SERVER_URL=http://mcp:3001/mcp \
+    sm3-agent:local
+  ```
+- Publish to GHCR via the "Manual Docker Build" GitHub Action. Trigger the workflow with a `version` input (e.g., `v0.1.0`) to build and push `ghcr.io/<org>/<repo>:<version>` using the same Dockerfile.
+
+### Example docker-compose
+The example assumes an MCP server is reachable at `http://mcp:3001/mcp` (run it as another service or adjust the URL).
+```yaml
+services:
+  backend:
+    image: ghcr.io/<org>/<repo>:<tag>
+    restart: unless-stopped
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      MCP_SERVER_URL: http://mcp:3001/mcp
+    ports:
+      - "8000:8000"
+
+  chainlit:
+    image: ghcr.io/<org>/<repo>:<tag>
+    command: ["chainlit", "run", "frontend/chainlit_app.py", "-h", "0.0.0.0", "-p", "8001"]
+    restart: unless-stopped
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      MCP_SERVER_URL: http://mcp:3001/mcp
+    depends_on:
+      - backend
+    ports:
+      - "8001:8001"
+```

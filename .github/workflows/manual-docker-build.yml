@@ -16,7 +16,7 @@ jobs:
       packages: write
     env:
       REGISTRY: ghcr.io
-      IMAGE: ${{ lower(github.repository) }}
+      IMAGE: ${{ (github.repository) }}
       TAG: ${{ inputs.version }}
       DOCKERFILE: ./Dockerfile
       CONTEXT: .

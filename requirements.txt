@@ -3,8 +3,8 @@ uvicorn
 pydantic
 pydantic-settings
 langchain
-langchain-openai
-modelcontextprotocol
+langchain-openai==0.1.17
+modelcontextprotocol==0.0.8
 chainlit
 httpx
 python-dotenv

@@ -40,6 +40,19 @@ The API exposes `POST /api/chat` for chat turns and `GET /health` for readiness 
     -e MCP_SERVER_URL=http://mcp:3001/mcp \
     sm3-agent:local
   ```
+- Pull from GHCR (built by the GitHub Action) and run a single container:
+  ```bash
+  docker run --rm \
+    -p 8000:8000 -p 8001:8001 \
+    -e OPENAI_API_KEY=<your-key> \
+    -e MCP_SERVER_URL=http://mcp:3001/mcp \
+    -e SERVICE=all \
+    ghcr.io/brownster/sm3_agent:latest
+  ```
+  The image now ships a small entrypoint so you can choose what to start:
+  - `SERVICE=backend` (default): only the FastAPI API on `BACKEND_PORT` (default `8000`).
+  - `SERVICE=chainlit`: only the Chainlit UI on `CHAINLIT_PORT` (default `8001`).
+  - `SERVICE=all`: run both processes in one container (expose both ports).
 - Publish to GHCR via the "Manual Docker Build" GitHub Action. Trigger the workflow with a `version` input (e.g., `v0.1.0`) to build and push `ghcr.io/<org>/<repo>:<version>` using the same Dockerfile.
 
 ### Example docker-compose

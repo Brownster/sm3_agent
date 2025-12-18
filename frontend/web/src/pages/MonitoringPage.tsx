@@ -12,7 +12,6 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { monitoringApi } from '@/services/api';
-import type { MonitoringStatus, MonitoringTarget, Alert } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function MonitoringPage() {

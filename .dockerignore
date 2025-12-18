@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.swp
+*.db
+.git
+.github
+venv
+.env
+.env.*
+*.log
+.frontend-cache
+node_modules

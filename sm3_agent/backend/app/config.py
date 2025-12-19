@@ -1,7 +1,7 @@
 from functools import lru_cache
-from typing import List
+from typing import List, Union
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -26,10 +26,10 @@ class Settings(BaseSettings):
     )
 
     # CORS configuration
-    cors_origins: List[str] = Field(
-        default=["http://localhost:3000", "http://localhost:8001"],
+    cors_origins: Union[str, List[str]] = Field(
+        default="http://localhost:3000,http://localhost:8001",
         env="CORS_ORIGINS",
-        description="Allowed CORS origins (comma-separated)"
+        description="Allowed CORS origins (comma-separated string or list)"
     )
     cors_allow_credentials: bool = Field(
         True,
@@ -57,18 +57,22 @@ class Settings(BaseSettings):
             raise ValueError("MCP_SERVER_URL must start with http:// or https://")
         return v
 
-    @field_validator("cors_origins", mode="before")
+    @field_validator("cors_origins", mode="after")
     @classmethod
-    def parse_cors_origins(cls, v) -> List[str]:
+    def parse_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
         """Parse CORS origins from comma-separated string or list."""
         if isinstance(v, str):
             # Split by comma and strip whitespace
             return [origin.strip() for origin in v.split(",") if origin.strip()]
         return v
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        # Disable JSON parsing for complex types from env vars
+        env_parse_enums=True,
+        extra="ignore"
+    )
 
 
 @lru_cache

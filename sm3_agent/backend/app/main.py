@@ -5,6 +5,7 @@ from backend.app.config import get_settings
 from backend.agents.agent_manager import AgentManager
 from backend.agents.proactive import create_default_targets, get_proactive_monitor
 from backend.api.monitoring import router as monitoring_router
+from backend.api.alerts import router as alerts_router
 from backend.schemas.models import ChatRequest, ChatResponse
 from backend.telemetry.metrics import (
     chat_requests_total,
@@ -46,8 +47,9 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
-# Include monitoring router
+# Include routers
 app.include_router(monitoring_router)
+app.include_router(alerts_router, prefix="/api")
 
 
 @app.on_event("startup")

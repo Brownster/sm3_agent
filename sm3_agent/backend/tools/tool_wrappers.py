@@ -100,12 +100,15 @@ async def build_mcp_tools(settings: Settings) -> List[Tool]:
                         else:
                             return "❌ Error: Unsupported argument type"
 
+                        if "datasource_uid" in arguments_dict and "datasourceUid" not in arguments_dict:
+                            arguments_dict["datasourceUid"] = arguments_dict.pop("datasource_uid")
+
                         # Auto-select Prometheus datasource if missing
-                        if tool_name == "list_prometheus_metric_names" and "datasource_uid" not in arguments_dict:
+                        if tool_name == "list_prometheus_metric_names" and "datasourceUid" not in arguments_dict:
                             ds_result = await client.invoke_tool("list_datasources", {})
                             prom_uid = _extract_prometheus_uid(ds_result)
                             if prom_uid:
-                                arguments_dict["datasource_uid"] = prom_uid
+                                arguments_dict["datasourceUid"] = prom_uid
 
                         logger.info(f"Invoking MCP tool: {tool_name}", extra={"arguments": arguments_dict})
                         result = await client.invoke_tool(tool_name, arguments_dict)
@@ -143,8 +146,9 @@ async def build_mcp_tools(settings: Settings) -> List[Tool]:
                     description += f"\n\nRequired: {required}"
 
             # Create LangChain Tool
+            # Use coroutine parameter for async functions
             langchain_tools.append(StructuredTool.from_function(
-                func=tool_func,
+                coroutine=tool_func,
                 name=mcp_tool.name,
                 description=description,
             ))

@@ -187,11 +187,12 @@ class ProactiveMonitor:
                 result = await self.mcp_client.invoke_tool(
                     "query_prometheus",
                     {
-                        "datasource_uid": target.datasource_uid,
-                        "query": target.query,
-                        "start": (datetime.utcnow() - timedelta(hours=1)).isoformat(),
-                        "end": datetime.utcnow().isoformat(),
-                        "step": "60s"
+                        "datasourceUid": target.datasource_uid,
+                        "expr": target.query,
+                        "startTime": "now-1h",
+                        "endTime": "now",
+                        "stepSeconds": 60,
+                        "queryType": "range"
                     }
                 )
                 return result
@@ -201,11 +202,11 @@ class ProactiveMonitor:
                 result = await self.mcp_client.invoke_tool(
                     "query_loki_logs",
                     {
-                        "datasource_uid": target.datasource_uid,
-                        "query": target.query,
-                        "start": (datetime.utcnow() - timedelta(hours=1)).isoformat(),
-                        "end": datetime.utcnow().isoformat(),
-                        "limit": 1000
+                        "datasourceUid": target.datasource_uid,
+                        "logql": target.query,
+                        "startRfc3339": (datetime.utcnow() - timedelta(hours=1)).isoformat() + "Z",
+                        "endRfc3339": datetime.utcnow().isoformat() + "Z",
+                        "limit": 100  # Max allowed by MCP
                     }
                 )
                 return result

@@ -123,9 +123,9 @@ export default function ChatPage() {
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-center">
             <div>
-              <h2 className="text-2xl font-bold mb-2">Welcome to Grafana Chat Agent</h2>
+              <h2 className="text-2xl font-bold mb-2">Welcome to Sabio Monitoring Agent</h2>
               <p className="text-gray-400 mb-6">
-                Ask me anything about your Grafana dashboards, metrics, and logs.
+                Ask me anything about your monitoring dashboards, metrics, and logs.
               </p>
               <div className="flex flex-wrap gap-2 justify-center">
                 {[
@@ -229,7 +229,7 @@ export default function ChatPage() {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about your Grafana metrics, dashboards, or logs..."
+          placeholder="Ask about your monitoring metrics, dashboards, or logs..."
           className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:border-orange-500 transition-colors"
           disabled={isLoading}
         />

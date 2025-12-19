@@ -19,9 +19,9 @@ export default function Layout({ children }: LayoutProps) {
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center gap-2 text-xl font-bold">
               <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
-                <span className="text-white text-sm font-bold">G</span>
+                <span className="text-white text-sm font-bold">S</span>
               </div>
-              <span>Grafana Agent</span>
+              <span>Sabio Monitoring Agent</span>
             </Link>
 
             <nav className="flex gap-1">
@@ -70,7 +70,7 @@ export default function Layout({ children }: LayoutProps) {
       {/* Footer */}
       <footer className="border-t border-gray-800 mt-12">
         <div className="container mx-auto px-4 py-6 text-center text-gray-500 text-sm">
-          <p>Grafana MCP Chat Agent v0.2.0 - Powered by LangChain & Claude</p>
+          <p>Sabio Monitoring Agent v0.2.0 - Powered by SM3</p>
         </div>
       </footer>
     </div>

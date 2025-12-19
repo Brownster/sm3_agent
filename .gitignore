@@ -66,3 +66,5 @@ mcp-grafana/
 tmp/
 temp/
 *.tmp
+.gocache/
+.gopath/

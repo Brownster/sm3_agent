@@ -665,9 +665,6 @@ From `ENHANCEMENT_ROADMAP.md`:
 4. Add tests if applicable
 5. Submit a pull request
 
-## License
-
-[Add your license here]
 
 ## Acknowledgments
 

@@ -46,6 +46,8 @@ class AgentManager:
                     "\n\nYou have access to the registered MCP tools. Use them when helpful."
                     "\nWhen needing Prometheus metrics, first call list_datasources, select a datasource where type contains 'prometheus',"
                     " and pass its uid as datasource_uid to list_prometheus_metric_names. If none exists, state that clearly."
+                    "\nWhen listing dashboards, call search_dashboards once, then summarize titles (and folder/url if present) in a short list."
+                    " Do not keep re-calling the tool after a successful response."
                 )
             ),
             MessagesPlaceholder(variable_name="chat_history", optional=True),
@@ -104,7 +106,7 @@ class AgentManager:
             memory=memory,
             verbose=self.settings.enable_tracing,
             handle_parsing_errors=True,
-            max_iterations=10,  # Prevent infinite loops
+            max_iterations=6,  # Prevent infinite loops
             max_execution_time=60,  # 60 second timeout
             return_intermediate_steps=True  # Return tool calls for logging
         )

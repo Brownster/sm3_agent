@@ -30,6 +30,8 @@ class ToolResultFormatter:
             return f"❌ Error: {result['error']}"
 
         # Route to specific formatters based on tool name
+        if tool_name == "search_dashboards":
+            return ToolResultFormatter._format_dashboard_search(result)
         if "prometheus" in tool_name.lower():
             return ToolResultFormatter._format_prometheus(result)
         elif "loki" in tool_name.lower():
@@ -212,6 +214,43 @@ class ToolResultFormatter:
                 output.append(f"   Tags: {', '.join(dash['tags'])}")
 
         return "\n".join(output) if output else json.dumps(result, indent=2)
+
+    @staticmethod
+    def _format_dashboard_search(result: Any) -> str:
+        """Format search_dashboards result into a concise list."""
+        items: List[Dict[str, Any]] = []
+
+        if isinstance(result, list):
+            items = result
+        elif isinstance(result, dict):
+            if "items" in result and isinstance(result["items"], list):
+                items = result["items"]
+            elif "dashboards" in result and isinstance(result["dashboards"], list):
+                items = result["dashboards"]
+
+        if not items:
+            return "No dashboards found."
+
+        lines = []
+        for item in items[:25]:  # cap output
+            title = item.get("title", "(untitled)")
+            dtype = item.get("type", "dash")
+            uid = item.get("uid", "")
+            url = item.get("url") or item.get("uri") or ""
+            folder = item.get("folderTitle") or item.get("folder") or ""
+            parts = [title]
+            if folder:
+                parts.append(f"folder: {folder}")
+            if uid:
+                parts.append(f"uid: {uid}")
+            if url:
+                parts.append(f"url: {url}")
+            lines.append(f"• {', '.join(parts)} [{dtype}]")
+
+        if len(items) > 25:
+            lines.append(f"... and {len(items) - 25} more")
+
+        return "\n".join(lines)
 
     @staticmethod
     def _format_alert(result: Any) -> str:

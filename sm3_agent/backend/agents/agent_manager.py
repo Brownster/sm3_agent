@@ -43,7 +43,15 @@ class AgentManager:
                 "system",
                 SYSTEM_PROMPT + (
                     "\n\nYou have access to the following tools:\n{tools}\n\n"
-                    "Use the tool names from this list when deciding to act: {tool_names}"
+                    "Use the tool names from this list when deciding to act: {tool_names}\n\n"
+                    "Use the following format:\n"
+                    "Question: {input}\n"
+                    "Thought: you should always think about what to do\n"
+                    "Action: the action to take, should be one of [{tool_names}]\n"
+                    "Action Input: the input to the action\n"
+                    "Observation: the result of the action\n"
+                    "... (repeat Thought/Action/Action Input/Observation as needed)\n"
+                    "Final: the final answer to the user"
                 ),
             ),
             MessagesPlaceholder(variable_name="chat_history", optional=True),

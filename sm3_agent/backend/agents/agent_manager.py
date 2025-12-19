@@ -240,14 +240,34 @@ class AgentManager:
                 elif "steps" in chunk:
                     # Tool execution completed
                     for step in chunk["steps"]:
-                        if len(step) >= 2:
+                        # LangChain may return an AgentStep object or a tuple/list
+                        action = getattr(step, "action", None)
+                        observation = getattr(step, "observation", None)
+
+                        if action is None and isinstance(step, (tuple, list)) and len(step) >= 2:
                             action, observation = step[0], step[1]
-                            yield {
-                                "type": "tool",
-                                "status": "completed",
-                                "tool_name": action.tool,
-                                "message": f"✅ Completed: {action.tool}"
-                            }
+
+                        if action is None:
+                            continue
+
+                        yield {
+                            "type": "tool",
+                            "status": "completed",
+                            "tool_name": action.tool,
+                            "message": f"✅ Completed: {action.tool}"
+                        }
+
+                        # Attach observation output to the most recent matching tool call
+                        for existing in reversed(tool_calls):
+                            if existing.get("tool") == action.tool and "output" not in existing:
+                                existing["output"] = str(observation)[:200]
+                                break
+                        else:
+                            tool_calls.append({
+                                "tool": action.tool,
+                                "input": getattr(action, "tool_input", None),
+                                "output": str(observation)[:200]
+                            })
 
                 elif "output" in chunk:
                     # Final output

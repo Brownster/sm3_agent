@@ -228,13 +228,13 @@ class AgentManager:
                         yield {
                             "type": "tool",
                             "status": "executing",
-                            "tool_name": tool_name,
-                            "message": f"🔧 Using tool: {tool_name}"
+                            "tool": tool_name,
+                            "arguments": tool_input,
                         }
 
                         tool_calls.append({
                             "tool": tool_name,
-                            "input": tool_input
+                            "arguments": tool_input
                         })
 
                 elif "steps" in chunk:
@@ -253,8 +253,9 @@ class AgentManager:
                         yield {
                             "type": "tool",
                             "status": "completed",
-                            "tool_name": action.tool,
-                            "message": f"✅ Completed: {action.tool}"
+                            "tool": action.tool,
+                            "arguments": getattr(action, "tool_input", None),
+                            "result": observation,
                         }
 
                         # Attach observation output to the most recent matching tool call
@@ -278,7 +279,7 @@ class AgentManager:
                     for i, word in enumerate(words):
                         yield {
                             "type": "token",
-                            "content": word + (" " if i < len(words) - 1 else "")
+                            "message": word + (" " if i < len(words) - 1 else "")
                         }
 
             # Send completion event

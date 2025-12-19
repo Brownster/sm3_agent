@@ -41,10 +41,7 @@ class AgentManager:
         self.prompt = ChatPromptTemplate.from_messages([
             (
                 "system",
-                SYSTEM_PROMPT + (
-                    "\n\nYou have access to the following tools:\n{tools}\n\n"
-                    "Use the tool names from this list when deciding to act: {tool_names}"
-                ),
+                SYSTEM_PROMPT + "\n\nYou have access to the registered MCP tools. Use them when helpful."
             ),
             MessagesPlaceholder(variable_name="chat_history", optional=True),
             ("human", "{input}"),
@@ -81,21 +78,6 @@ class AgentManager:
             )
         return self.session_memories[session_id]
 
-    def _format_tools(self) -> str:
-        """Return a newline-separated description of available tools."""
-        if not self.tools:
-            return "None"
-        lines = []
-        for tool in self.tools:
-            desc = tool.description if getattr(tool, "description", None) else ""
-            lines.append(f"- {tool.name}: {desc}")
-        return "\n".join(lines)
-
-    def _tool_names(self) -> str:
-        """Return a comma-separated list of tool names."""
-        if not self.tools:
-            return ""
-        return ", ".join([tool.name for tool in self.tools])
 
     def create_agent_executor(self, memory: ConversationBufferMemory) -> AgentExecutor:
         """
@@ -149,23 +131,11 @@ class AgentManager:
         # Create agent executor with session-specific memory
         agent_executor = self.create_agent_executor(memory)
 
-        # Supply tool context expected by the prompt
-        tool_vars = {
-            "tools": self._format_tools(),
-            "tool_names": self._tool_names()
-        }
-
-        # Supply tool context expected by the prompt
-        tool_vars = {
-            "tools": self._format_tools(),
-            "tool_names": self._tool_names()
-        }
-
         logger.info(f"Processing message for session: {session_id}")
 
         try:
             # Execute the agent
-            result = await agent_executor.ainvoke({"input": message, **tool_vars})
+            result = await agent_executor.ainvoke({"input": message})
 
             # Extract the response
             response = result.get("output", "")
@@ -245,7 +215,7 @@ class AgentManager:
             response_text = ""
             tool_calls = []
 
-            async for chunk in agent_executor.astream({"input": message, **tool_vars}):
+            async for chunk in agent_executor.astream({"input": message}):
                 # Handle different chunk types
                 if "actions" in chunk:
                     # Tool execution started

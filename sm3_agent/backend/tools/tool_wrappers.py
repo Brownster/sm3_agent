@@ -4,6 +4,7 @@ import json
 from typing import Any, Dict, List
 
 from langchain.agents import Tool
+from langchain.tools import StructuredTool
 
 from backend.app.config import Settings
 from backend.tools.mcp_client import MCPClient
@@ -38,26 +39,35 @@ async def build_mcp_tools(settings: Settings) -> List[Tool]:
         for mcp_tool in tools_response.tools:
             # Create a closure that captures the tool name and client
             def make_tool_func(tool_name: str):
-                async def tool_func(tool_input: str) -> str:
+                async def tool_func(arguments: Any | None = None) -> str:
                     """
                     Execute an MCP tool with the given input.
 
                     Args:
-                        tool_input: JSON string or plain string containing tool arguments
+                        arguments: dict, JSON string, plain string, or None containing tool arguments
 
                     Returns:
                         Formatted string result from the MCP tool
                     """
                     try:
-                        # Parse input as JSON if possible, otherwise treat as single string argument
-                        if tool_input.strip().startswith('{'):
-                            arguments = json.loads(tool_input)
+                        # Normalize arguments
+                        if arguments is None:
+                            arguments_dict: Dict[str, Any] = {}
+                        elif isinstance(arguments, dict):
+                            arguments_dict = arguments
+                        elif isinstance(arguments, str):
+                            cleaned = arguments.strip()
+                            if cleaned.startswith('{'):
+                                arguments_dict = json.loads(cleaned)
+                            elif cleaned:
+                                arguments_dict = {"input": cleaned}
+                            else:
+                                arguments_dict = {}
                         else:
-                            # For simple tools with single string argument
-                            arguments = {"input": tool_input}
+                            return "❌ Error: Unsupported argument type"
 
-                        logger.info(f"Invoking MCP tool: {tool_name}", extra={"arguments": arguments})
-                        result = await client.invoke_tool(tool_name, arguments)
+                        logger.info(f"Invoking MCP tool: {tool_name}", extra={"arguments": arguments_dict})
+                        result = await client.invoke_tool(tool_name, arguments_dict)
 
                         # Use structured formatter for better LLM comprehension
                         formatted_result = formatter.format(tool_name, result)
@@ -92,11 +102,10 @@ async def build_mcp_tools(settings: Settings) -> List[Tool]:
                     description += f"\n\nRequired: {required}"
 
             # Create LangChain Tool
-            langchain_tools.append(Tool(
-                name=mcp_tool.name,
+            langchain_tools.append(StructuredTool.from_function(
                 func=tool_func,
-                coroutine=tool_func,
-                description=description
+                name=mcp_tool.name,
+                description=description,
             ))
 
         logger.info(f"Successfully created {len(langchain_tools)} LangChain tools")

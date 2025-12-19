@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, List
 
-from langchain.agents import AgentExecutor, create_react_agent
+from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain.agents import Tool as LangChainTool
 from langchain.memory import ConversationBufferMemory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -37,26 +37,18 @@ class AgentManager:
         # Store separate memory for each session
         self.session_memories: Dict[str, ConversationBufferMemory] = {}
 
-        # Create the prompt template for the agent
+        # Prompt for tool-calling agent (no ReAct text parsing)
         self.prompt = ChatPromptTemplate.from_messages([
             (
                 "system",
                 SYSTEM_PROMPT + (
                     "\n\nYou have access to the following tools:\n{tools}\n\n"
-                    "Use the tool names from this list when deciding to act: {tool_names}\n\n"
-                    "Use the following format:\n"
-                    "Question: {input}\n"
-                    "Thought: you should always think about what to do\n"
-                    "Action: the action to take, should be one of [{tool_names}]\n"
-                    "Action Input: the input to the action\n"
-                    "Observation: the result of the action\n"
-                    "... (repeat Thought/Action/Action Input/Observation as needed)\n"
-                    "Final: the final answer to the user"
+                    "Use the tool names from this list when deciding to act: {tool_names}"
                 ),
             ),
             MessagesPlaceholder(variable_name="chat_history", optional=True),
             ("human", "{input}"),
-            ("assistant", "{agent_scratchpad}"),
+            MessagesPlaceholder(variable_name="agent_scratchpad"),
         ])
 
     async def initialize(self) -> None:
@@ -95,8 +87,8 @@ class AgentManager:
 
         Uses the modern create_react_agent pattern instead of deprecated initialize_agent.
         """
-        # Create the React agent
-        agent = create_react_agent(
+        # Create the tool-calling agent to avoid brittle ReAct parsing
+        agent = create_tool_calling_agent(
             llm=self.llm,
             tools=self.tools,
             prompt=self.prompt

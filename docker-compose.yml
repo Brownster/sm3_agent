@@ -1,5 +1,3 @@
-version: '3.8'
-
 # Simplified docker-compose for running frontend + backend locally
 # Uses pre-built images from GitHub Container Registry
 # MCP Server and Grafana run on separate machines

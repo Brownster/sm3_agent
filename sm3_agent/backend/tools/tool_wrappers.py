@@ -30,7 +30,7 @@ async def build_mcp_tools(settings: Settings) -> List[Tool]:
         logger.info("Connected to MCP server for tool discovery")
 
         # Discover all available tools from the MCP server
-        tools_response = await client.client.list_tools()
+        tools_response = await client.session.list_tools()
         logger.info(f"Discovered {len(tools_response.tools)} tools from MCP server")
 
         langchain_tools = []

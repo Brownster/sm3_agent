@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+from contextlib import AsyncExitStack
 
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
@@ -17,16 +18,13 @@ class MCPClient:
     """
     MCP client wrapper for Grafana MCP server with proper lifecycle management.
 
-    Supports async context manager pattern for automatic cleanup.
+    Uses AsyncExitStack to properly manage async context managers.
     """
 
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
-        self.session = None
-        self._transport_context = None
-        self._read = None
-        self._write = None
-        self._session_exit = None
+        self.session: Optional[ClientSession] = None
+        self._exit_stack: Optional[AsyncExitStack] = None
         self._connection_attempts = 0
         self._max_retries = 3
 
@@ -50,6 +48,7 @@ class MCPClient:
             logger.debug("Already connected to MCP server")
             return
 
+        last_error = None
         while self._connection_attempts < self._max_retries:
             try:
                 logger.info(
@@ -57,13 +56,21 @@ class MCPClient:
                     extra={"url": self.settings.mcp_server_url}
                 )
 
-                # Create transport context manager and enter it
-                self._transport_context = streamablehttp_client(url=self.settings.mcp_server_url)
-                self._read, self._write, _ = await self._transport_context.__aenter__()
+                # Use AsyncExitStack to properly manage context managers
+                self._exit_stack = AsyncExitStack()
+                await self._exit_stack.__aenter__()
 
-                # Create and initialize session
-                self.session = ClientSession(self._read, self._write)
-                self._session_exit = await self.session.__aenter__()
+                # Enter transport context
+                read, write, _ = await self._exit_stack.enter_async_context(
+                    streamablehttp_client(url=self.settings.mcp_server_url)
+                )
+
+                # Enter session context
+                self.session = await self._exit_stack.enter_async_context(
+                    ClientSession(read, write)
+                )
+
+                # Initialize session
                 await self.session.initialize()
 
                 logger.info("Successfully connected to MCP server", extra={"url": self.settings.mcp_server_url})
@@ -71,6 +78,7 @@ class MCPClient:
                 return
 
             except Exception as e:
+                last_error = e
                 self._connection_attempts += 1
                 logger.error(
                     f"Failed to connect to MCP server: {e}",
@@ -81,28 +89,29 @@ class MCPClient:
                     }
                 )
 
+                # Clean up exit stack on error
+                if self._exit_stack:
+                    try:
+                        await self._exit_stack.__aexit__(None, None, None)
+                    except:
+                        pass
+                    self._exit_stack = None
+                    self.session = None
+
                 if self._connection_attempts >= self._max_retries:
                     raise Exception(
-                        f"Failed to connect to MCP server after {self._max_retries} attempts: {e}"
-                    ) from e
+                        f"Failed to connect to MCP server after {self._max_retries} attempts: {last_error}"
+                    ) from last_error
 
     async def disconnect(self) -> None:
         """Gracefully disconnect from the MCP server."""
         try:
-            if self.session is not None:
+            if self._exit_stack is not None:
                 logger.info("Disconnecting from MCP server")
-                # Exit session context
-                await self.session.__aexit__(None, None, None)
+                await self._exit_stack.__aexit__(None, None, None)
+                self._exit_stack = None
                 self.session = None
-
-            if self._transport_context is not None:
-                # Exit transport context
-                await self._transport_context.__aexit__(None, None, None)
-                self._transport_context = None
-
-            self._read = None
-            self._write = None
-            self._connection_attempts = 0
+                self._connection_attempts = 0
         except Exception as e:
             logger.warning(f"Error during disconnect: {e}")
 

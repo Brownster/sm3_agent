@@ -19,6 +19,14 @@ formatter = ToolResultFormatter()
 def _extract_prometheus_uid(data: Any) -> str | None:
     """Find a Prometheus datasource UID from list_datasources result."""
     try:
+        # Handle MCP TextContent objects - extract text and parse JSON
+        if isinstance(data, list) and data and hasattr(data[0], 'text'):
+            # Parse the JSON from the text content
+            text = data[0].text
+            parsed = json.loads(text) if isinstance(text, str) else text
+            if isinstance(parsed, dict):
+                data = parsed
+
         items = []
         if isinstance(data, list):
             items = data

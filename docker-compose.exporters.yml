@@ -1,0 +1,65 @@
+version: '3.8'
+
+# Add Prometheus exporters to generate metrics for testing
+# These will connect to your existing LGTM stack
+
+services:
+  # Node Exporter - Linux system metrics (CPU, memory, disk, network)
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    command:
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    restart: unless-stopped
+    network_mode: host
+
+  # cAdvisor - Container metrics (Docker container stats)
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - "8081:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    restart: unless-stopped
+    network_mode: host
+
+  # Blackbox Exporter - HTTP/HTTPS/TCP endpoint monitoring
+  blackbox-exporter:
+    image: prom/blackbox-exporter:latest
+    container_name: blackbox-exporter
+    ports:
+      - "9115:9115"
+    volumes:
+      - ./blackbox.yml:/etc/blackbox_exporter/config.yml
+    command:
+      - '--config.file=/etc/blackbox_exporter/config.yml'
+    restart: unless-stopped
+    network_mode: host
+
+  # Promtail - Send logs to Loki
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    command:
+      - '-config.file=/etc/promtail/promtail-config.yml'
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/promtail-config.yml
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    restart: unless-stopped
+    network_mode: host

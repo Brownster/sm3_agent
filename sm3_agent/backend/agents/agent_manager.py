@@ -43,11 +43,18 @@ class AgentManager:
             (
                 "system",
                 SYSTEM_PROMPT + (
-                    "\n\nYou have access to the registered MCP tools. Use them when helpful."
-                    "\nWhen needing Prometheus metrics, first call list_datasources, select a datasource where type contains 'prometheus',"
-                    " and pass its uid as datasource_uid to list_prometheus_metric_names. If none exists, state that clearly."
-                    "\nWhen listing dashboards, call search_dashboards once, then summarize titles (and folder/url if present) in a short list."
-                    " Do not keep re-calling the tool after a successful response."
+                    "\n\n## CRITICAL: Tool Usage Rules"
+                    "\n\n1. **NEVER call the same tool twice in a row with the same arguments**"
+                    "\n2. **After a tool returns data, USE that data - don't re-call the tool**"
+                    "\n3. **For Prometheus queries:**"
+                    "\n   - If you already know the datasource UID (like 'prometheus'), use it directly"
+                    "\n   - Otherwise, call list_datasources ONCE to get the UID"
+                    "\n   - Then immediately use query_prometheus with that UID"
+                    "\n4. **For dashboards:**"
+                    "\n   - Call search_dashboards ONCE"
+                    "\n   - Summarize the results in your response"
+                    "\n   - Do NOT call it again unless the user asks a new question"
+                    "\n\nThe default Prometheus datasource UID is 'prometheus' - use this if available."
                 )
             ),
             MessagesPlaceholder(variable_name="chat_history", optional=True),
@@ -104,10 +111,10 @@ class AgentManager:
             agent=agent,
             tools=self.tools,
             memory=memory,
-            verbose=self.settings.enable_tracing,
+            verbose=True,  # Enable verbose to debug tool outputs
             handle_parsing_errors=True,
-            max_iterations=6,  # Prevent infinite loops
-            max_execution_time=60,  # 60 second timeout
+            max_iterations=10,  # Increased to allow more complex queries
+            max_execution_time=90,  # 90 second timeout for complex queries
             return_intermediate_steps=True  # Return tool calls for logging
         )
 
@@ -157,6 +164,11 @@ class AgentManager:
                 for step in result["intermediate_steps"]:
                     if len(step) >= 2:
                         action, observation = step[0], step[1]
+
+                        # Resolve coroutine observations if any
+                        if inspect.iscoroutine(observation):
+                            observation = await observation
+
                         tool_calls.append({
                             "tool": action.tool,
                             "input": action.tool_input,

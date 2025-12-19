@@ -53,11 +53,13 @@ class ToolResultFormatter:
         if not isinstance(result, (dict, list)):
             return str(result)
 
-        # Handle list of content items from MCP
+        # Handle list of content items from MCP (TextContent objects or dicts)
         if isinstance(result, list):
             formatted_parts = []
             for item in result:
-                if isinstance(item, dict) and "text" in item:
+                if hasattr(item, 'text'):
+                    formatted_parts.append(item.text)
+                elif isinstance(item, dict) and "text" in item:
                     formatted_parts.append(item["text"])
                 else:
                     formatted_parts.append(str(item))
@@ -130,11 +132,13 @@ class ToolResultFormatter:
         if not isinstance(result, (dict, list)):
             return str(result)
 
-        # Handle list of content items from MCP
+        # Handle list of content items from MCP (TextContent objects or dicts)
         if isinstance(result, list):
             formatted_parts = []
             for item in result:
-                if isinstance(item, dict) and "text" in item:
+                if hasattr(item, 'text'):
+                    formatted_parts.append(item.text)
+                elif isinstance(item, dict) and "text" in item:
                     formatted_parts.append(item["text"])
                 else:
                     formatted_parts.append(str(item))
@@ -192,11 +196,13 @@ class ToolResultFormatter:
         if not isinstance(result, (dict, list)):
             return str(result)
 
-        # Handle list of content items from MCP
+        # Handle list of content items from MCP (TextContent objects or dicts)
         if isinstance(result, list):
             formatted_parts = []
             for item in result:
-                if isinstance(item, dict) and "text" in item:
+                if hasattr(item, 'text'):
+                    formatted_parts.append(item.text)
+                elif isinstance(item, dict) and "text" in item:
                     formatted_parts.append(item["text"])
                 else:
                     formatted_parts.append(str(item))
@@ -220,6 +226,18 @@ class ToolResultFormatter:
         """Format search_dashboards result into a concise list."""
         items: List[Dict[str, Any]] = []
 
+        # Handle MCP TextContent objects
+        if isinstance(result, list) and result and hasattr(result[0], 'text'):
+            # Parse JSON from TextContent
+            import json
+            try:
+                text = result[0].text
+                parsed = json.loads(text) if isinstance(text, str) else text
+                if isinstance(parsed, dict):
+                    result = parsed
+            except:
+                pass
+
         if isinstance(result, list):
             items = result
         elif isinstance(result, dict):
@@ -233,6 +251,8 @@ class ToolResultFormatter:
 
         lines = []
         for item in items[:25]:  # cap output
+            if not isinstance(item, dict):
+                continue
             title = item.get("title", "(untitled)")
             dtype = item.get("type", "dash")
             uid = item.get("uid", "")
@@ -258,10 +278,16 @@ class ToolResultFormatter:
         if not isinstance(result, (dict, list)):
             return str(result)
 
-        # Handle list of content items from MCP
+        # Handle list of content items from MCP (TextContent objects or dicts)
         if isinstance(result, list):
-            # Check if it's a list of MCP content items
-            if result and isinstance(result[0], dict) and "text" in result[0]:
+            # Check if it's a list of MCP content items (TextContent objects)
+            if result and hasattr(result[0], 'text'):
+                formatted_parts = []
+                for item in result:
+                    formatted_parts.append(item.text)
+                return "\n".join(formatted_parts)
+            # Check if it's a list of MCP content items (dicts)
+            elif result and isinstance(result[0], dict) and "text" in result[0]:
                 formatted_parts = []
                 for item in result:
                     formatted_parts.append(item["text"])
@@ -288,9 +314,15 @@ class ToolResultFormatter:
         if not isinstance(result, (dict, list)):
             return str(result)
 
-        # Handle list of content items from MCP
+        # Handle list of content items from MCP (TextContent objects or dicts)
         if isinstance(result, list):
-            if result and isinstance(result[0], dict) and "text" in result[0]:
+            # Check if it's MCP TextContent objects
+            if result and hasattr(result[0], 'text'):
+                formatted_parts = []
+                for item in result:
+                    formatted_parts.append(item.text)
+                return "\n".join(formatted_parts)
+            elif result and isinstance(result[0], dict) and "text" in result[0]:
                 formatted_parts = []
                 for item in result:
                     formatted_parts.append(item["text"])
@@ -315,9 +347,14 @@ class ToolResultFormatter:
         if not isinstance(result, (dict, list)):
             return str(result)
 
-        # Handle list of content items from MCP
+        # Handle list of content items from MCP (TextContent objects or dicts)
         if isinstance(result, list):
-            if result and isinstance(result[0], dict) and "text" in result[0]:
+            if result and hasattr(result[0], 'text'):
+                formatted_parts = []
+                for item in result:
+                    formatted_parts.append(item.text)
+                return "\n".join(formatted_parts)
+            elif result and isinstance(result[0], dict) and "text" in result[0]:
                 formatted_parts = []
                 for item in result:
                     formatted_parts.append(item["text"])
@@ -345,9 +382,17 @@ class ToolResultFormatter:
         if result is None:
             return "No result"
 
-        # Handle list of content items from MCP
+        # Handle list of content items from MCP (TextContent objects or dicts)
         if isinstance(result, list):
-            if result and isinstance(result[0], dict) and "text" in result[0]:
+            if result and hasattr(result[0], 'text'):
+                formatted_parts = []
+                for item in result:
+                    if hasattr(item, 'text'):
+                        formatted_parts.append(item.text)
+                    else:
+                        formatted_parts.append(str(item))
+                return "\n".join(formatted_parts)
+            elif result and isinstance(result[0], dict) and "text" in result[0]:
                 formatted_parts = []
                 for item in result:
                     if isinstance(item, dict) and "text" in item:
